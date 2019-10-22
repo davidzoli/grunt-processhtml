@@ -50,13 +50,30 @@ module.exports = function (grunt) {
         return n();
       }
 
-      var result = [];
+      var result = [],
+          settingsFile,
+          settingsFilePath;
       async.concatSeries(srcFiles, function (file, next) {
+        grunt.verbose.writeln('File ' + file.cyan + ' to process.');
 
+        settingsFilePath = path.dirname(file);
+        settingsFile = settingsFilePath + '/settings.yaml';
+        if (grunt.file.exists(settingsFile)) {
+          html.data.environment = grunt.file.readYAML(settingsFile);
+        }
+        settingsFile = settingsFilePath + '/settings.json';
+        if (grunt.file.exists(settingsFile)) {
+          html.data.environment = grunt.file.readJSON(settingsFile);
+        }
+
+        try {
         var content = html.process(file);
 
         if (options.process) {
           content = html.template(content, lodash.cloneDeep(html.data), options.templateSettings);
+        }
+        } catch (e) {
+          throw new Error('Unable to process "' + file + '".\n' + e);
         }
 
         result.push(content);
