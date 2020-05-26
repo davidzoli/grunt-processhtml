@@ -15,6 +15,28 @@ var async = require('async');
 
 var HTMLProcessor = require('htmlprocessor');
 
+const getSettings = (file, grunt) => {
+  const settingsFilePath = path.dirname(file);
+  const settingsFiles = [
+    '/settings.yaml',
+    '/settings.json',
+    '/../settings.yaml',
+    '/../settings.json',
+  ];
+  let settingsFile;
+  let returnData = false;
+  for (let i = 0; i < settingsFiles.length; i++) {
+    settingsFile = settingsFilePath + settingsFiles[i];
+    if (path.extname(settingsFile) === '.yaml' && grunt.file.exists(settingsFile)) {
+      return grunt.file.readYAML(settingsFile);
+    } else if (path.extname(settingsFile) === '.json' && grunt.file.exists(settingsFile)) {
+      return grunt.file.readJSON(settingsFile);
+    }
+  }
+  grunt.log.warn('Settings file not found!');
+  return false;
+}
+
 module.exports = function (grunt) {
 
   grunt.registerMultiTask('processhtml', 'Process html files at build time to modify them depending on the release environment', function () {
@@ -51,19 +73,14 @@ module.exports = function (grunt) {
       }
 
       var result = [],
-          settingsFile,
-          settingsFilePath;
+          settingsFile;
       async.concatSeries(srcFiles, function (file, next) {
         grunt.verbose.writeln('File ' + file.cyan + ' to process.');
 
-        settingsFilePath = path.dirname(file);
-        settingsFile = settingsFilePath + '/settings.yaml';
-        if (grunt.file.exists(settingsFile)) {
-          html.data.environment = grunt.file.readYAML(settingsFile);
-        }
-        settingsFile = settingsFilePath + '/settings.json';
-        if (grunt.file.exists(settingsFile)) {
-          html.data.environment = grunt.file.readJSON(settingsFile);
+        var settingsFilePath = path.dirname(file);
+        var settingsData = getSettings(settingsFilePath, grunt);
+        if (settingsData) {
+          html.data.environment = settingsData;
         }
 
         try {
@@ -77,6 +94,7 @@ module.exports = function (grunt) {
         }
 
         result.push(content);
+        grunt.log.writeln('File "' + file + '" processed.')
         process.nextTick(next);
 
       }, function () {
