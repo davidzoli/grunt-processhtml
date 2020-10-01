@@ -15,8 +15,7 @@ var async = require('async');
 
 var HTMLProcessor = require('htmlprocessor');
 
-const getSettings = (file, grunt) => {
-  const settingsFilePath = path.dirname(file);
+const getSettings = (settingsFilePath, grunt) => {
   const settingsFiles = [
     '/settings.yaml',
     '/settings.json',
